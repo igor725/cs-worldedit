@@ -98,7 +98,8 @@ COMMAND_FUNC(Set) {
 	}
 
 	Block_BulkUpdateSend(&bbu);
-	Command_Printf("%d blocks filled with %d.", count, block);
+	const char* to_name = Block_GetName(block);
+	Command_Printf("%d blocks filled with %s.", count, to_name);
 }
 
 COMMAND_FUNC(Replace) {
@@ -141,7 +142,8 @@ COMMAND_FUNC(Replace) {
 	}
 
 	Block_BulkUpdateSend(&bbu);
-	Command_Printf("%d blocks replaced with %d.", count, to);
+	const char* to_name = Block_GetName(to);
+	Command_Printf("%d blocks replaced with %s.", count, to_name);
 }
 
 static void freeselvecs(void* param) {
