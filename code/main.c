@@ -55,8 +55,9 @@ COMMAND_FUNC(Select) {
 		Assoc_Remove(ccdata->caller, WeAT, true);
 		Command_Print("Selection mode &cdisabled");
 	}
-	ptr = Memory_Alloc(1, sizeof(SVec) * 2);
-	Memory_Fill(ptr, sizeof(SVec) * 2, 0xFF);
+	ptr = Memory_Alloc(2, sizeof(SVec));
+	Vec_Set(ptr[0], -1, -1, -1);
+	Vec_Set(ptr[1], -1, -1, -1);
 	Assoc_Set(ccdata->caller, WeAT, ptr);
 	Command_Print("Selection mode &aenabled");
 }
