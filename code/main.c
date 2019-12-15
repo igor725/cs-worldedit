@@ -71,7 +71,7 @@ COMMAND_FUNC(Set) {
 	}
 
 	char blid[4];
-	if(!String_GetArgument(ccdata->args, blid, 4, 0)) {
+	if(!Command_GetArg(blid, 4, 0)){
 		Command_PrintUsage;
 	}
 
@@ -112,8 +112,8 @@ COMMAND_FUNC(Replace) {
 	}
 
 	char fromt[4], tot[4];
-	if(!String_GetArgument(ccdata->args, fromt, 4, 0) ||
-	!String_GetArgument(ccdata->args, tot, 4, 1)) {
+	if(!Command_GetArg(fromt, 4, 0)||
+	!Command_GetArg(tot, 4, 1)){
 		Command_PrintUsage;
 	}
 
