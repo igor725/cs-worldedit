@@ -39,7 +39,7 @@ static void clickhandler(void* param) {
 	} else if(!isVecInvalid && a->button == 1) {
 		if(vecs[0].x == -1)
 			vecs[0] = *a->pos;
-		else if(!SVec_Compare(&vecs[0], a->pos) && !SVec_Compare(&vecs[1], a->pos)){
+		else if(!SVec_Compare(&vecs[0], a->pos) && !SVec_Compare(&vecs[1], a->pos)) {
 			vecs[1] = *a->pos;
 			SVec s = vecs[0], e = vecs[1];
 			CubeNormalize(&s, &e);
@@ -53,26 +53,26 @@ COMMAND_FUNC(Select) {
 	if(ptr) {
 		Client_RemoveSelection(ccdata->caller, 0);
 		Assoc_Remove(ccdata->caller, WeAT, true);
-		Command_Print("Selection mode &cdisabled");
+		COMMAND_PRINT("Selection mode &cdisabled");
 	}
 	ptr = Memory_Alloc(2, sizeof(SVec));
 	Vec_Set(ptr[0], -1, -1, -1);
 	Vec_Set(ptr[1], -1, -1, -1);
 	Assoc_Set(ccdata->caller, WeAT, ptr);
-	Command_Print("Selection mode &aenabled");
+	COMMAND_PRINT("Selection mode &aenabled");
 }
 
 COMMAND_FUNC(Set) {
-	Command_SetUsage("/set <blockid>");
+	COMMAND_SETUSAGE("/set <blockid>");
 	Client* client = ccdata->caller;
 	SVec* ptr = GetCuboid(client);
 	if(!ptr) {
-		Command_Print("Select cuboid first.");
+		COMMAND_PRINT("Select cuboid first.");
 	}
 
 	char blid[4];
-	if(!Command_GetArg(blid, 4, 0)){
-		Command_PrintUsage;
+	if(!COMMAND_GETARG(blid, 4, 0)){
+		COMMAND_PRINTUSAGE;
 	}
 
 	BlockID block = (BlockID)String_ToInt(blid);
@@ -100,21 +100,21 @@ COMMAND_FUNC(Set) {
 
 	Block_BulkUpdateSend(&bbu);
 	const char* to_name = Block_GetName(block);
-	Command_Printf("%d blocks filled with %s.", count, to_name);
+	COMMAND_PRINTF("%d blocks filled with %s.", count, to_name);
 }
 
 COMMAND_FUNC(Replace) {
-	Command_SetUsage("/repalce <from> <to>");
+	COMMAND_SETUSAGE("/repalce <from> <to>");
 	Client* client = ccdata->caller;
 	SVec* ptr = GetCuboid(client);
 	if(!ptr) {
-		Command_Print("Select cuboid first.");
+		COMMAND_PRINT("Select cuboid first.");
 	}
 
 	char fromt[4], tot[4];
-	if(!Command_GetArg(fromt, 4, 0)||
-	!Command_GetArg(tot, 4, 1)){
-		Command_PrintUsage;
+	if(!COMMAND_GETARG(fromt, 4, 0)||
+	!COMMAND_GETARG(tot, 4, 1)) {
+		COMMAND_PRINTUSAGE;
 	}
 
 	BlockID from = (BlockID)String_ToInt(fromt);
@@ -144,7 +144,7 @@ COMMAND_FUNC(Replace) {
 
 	Block_BulkUpdateSend(&bbu);
 	const char* to_name = Block_GetName(to);
-	Command_Printf("%d blocks replaced with %s.", count, to_name);
+	COMMAND_PRINTF("%d blocks replaced with %s.", count, to_name);
 }
 
 static void freeselvecs(void* param) {
@@ -172,7 +172,7 @@ cs_bool Plugin_Unload(void) {
 	COMMAND_REMOVE(Select);
 	COMMAND_REMOVE(Set);
 	COMMAND_REMOVE(Replace);
-	Event_Unregister(EVT_ONCLICK, clickhandler);
-	Event_Unregister(EVT_ONDISCONNECT, freeselvecs);
+	EVENT_UNREGISTER(EVT_ONCLICK, clickhandler);
+	EVENT_UNREGISTER(EVT_ONDISCONNECT, freeselvecs);
 	return true;
 }
