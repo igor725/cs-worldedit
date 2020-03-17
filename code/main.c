@@ -8,8 +8,8 @@
 
 static cs_uint16 WeAT;
 
-static void CubeNormalize(SVec* s, SVec* e) {
-	cs_int16 tmp, *a = (cs_int16*)s, *b = (cs_int16*)e;
+static void CubeNormalize(SVec *s, SVec *e) {
+	cs_int16 tmp, *a = (cs_int16 *)s, *b = (cs_int16 *)e;
 	for(int i = 0; i < 3; i++) {
 		if(a[i] < b[i]) {
 			tmp = a[i];
@@ -20,16 +20,16 @@ static void CubeNormalize(SVec* s, SVec* e) {
 	}
 }
 
-static SVec* GetCuboid(Client* client) {
+static SVec *GetCuboid(Client *client) {
 	return Assoc_GetPtr(client, WeAT);
 }
 
-static void clickhandler(void* param) {
-	onPlayerClick* a = param;
+static void clickhandler(void *param) {
+	onPlayerClick *a = param;
 	if(Client_GetHeldBlock(a->client) != BLOCK_AIR || a->button == 0)
 		return;
 
-	SVec* vecs = GetCuboid(a->client);
+	SVec *vecs = GetCuboid(a->client);
 	if(!vecs) return;
 
 	cs_bool isVecInvalid = Vec_IsInvalid(a->pos);
@@ -49,7 +49,7 @@ static void clickhandler(void* param) {
 }
 
 COMMAND_FUNC(Select) {
-	SVec* ptr = GetCuboid(ccdata->caller);
+	SVec *ptr = GetCuboid(ccdata->caller);
 	if(ptr) {
 		Client_RemoveSelection(ccdata->caller, 0);
 		Assoc_Remove(ccdata->caller, WeAT, true);
@@ -64,8 +64,8 @@ COMMAND_FUNC(Select) {
 
 COMMAND_FUNC(Set) {
 	COMMAND_SETUSAGE("/set <blockid>");
-	Client* client = ccdata->caller;
-	SVec* ptr = GetCuboid(client);
+	Client *client = ccdata->caller;
+	SVec *ptr = GetCuboid(client);
 	if(!ptr) {
 		COMMAND_PRINT("Select cuboid first.");
 	}
@@ -76,7 +76,7 @@ COMMAND_FUNC(Set) {
 	}
 
 	BlockID block = (BlockID)String_ToInt(blid);
-	World* world = Client_GetWorld(client);
+	World *world = Client_GetWorld(client);
 	SVec s = ptr[0], e = ptr[1];
 	CubeNormalize(&s, &e);
 	cs_uint32 count = (s.x - e.x) * (s.y - e.y) * (s.z - e.z);
@@ -99,14 +99,14 @@ COMMAND_FUNC(Set) {
 	}
 
 	Block_BulkUpdateSend(&bbu);
-	const char* to_name = Block_GetName(block);
+	const char *to_name = Block_GetName(block);
 	COMMAND_PRINTF("%d blocks filled with %s.", count, to_name);
 }
 
 COMMAND_FUNC(Replace) {
 	COMMAND_SETUSAGE("/repalce <from> <to>");
-	Client* client = ccdata->caller;
-	SVec* ptr = GetCuboid(client);
+	Client *client = ccdata->caller;
+	SVec *ptr = GetCuboid(client);
 	if(!ptr) {
 		COMMAND_PRINT("Select cuboid first.");
 	}
@@ -119,7 +119,7 @@ COMMAND_FUNC(Replace) {
 
 	BlockID from = (BlockID)String_ToInt(fromt);
 	BlockID to = (BlockID)String_ToInt(tot);
-	World* world = Client_GetWorld(client);
+	World *world = Client_GetWorld(client);
 	SVec s = ptr[0], e = ptr[1];
 	CubeNormalize(&s, &e);
 	cs_uint32 count = 0;
@@ -143,19 +143,19 @@ COMMAND_FUNC(Replace) {
 	}
 
 	Block_BulkUpdateSend(&bbu);
-	const char* to_name = Block_GetName(to);
+	const char *to_name = Block_GetName(to);
 	COMMAND_PRINTF("%d blocks replaced with %s.", count, to_name);
 }
 
-static void freeselvecs(void* param) {
-	Assoc_Remove((Client*)param, WeAT, true);
+static void freeselvecs(void *param) {
+	Assoc_Remove((Client *)param, WeAT, true);
 }
 
 Plugin_SetVersion(1)
 
 cs_bool Plugin_Load(void) {
 	WeAT = Assoc_NewType();
-	Command* cmd;
+	Command *cmd;
 	cmd = COMMAND_ADD(Select, CMDF_OP | CMDF_CLIENT);
 	Command_SetAlias(cmd, "sel");
 	cmd = COMMAND_ADD(Set, CMDF_OP | CMDF_CLIENT);
