@@ -25,7 +25,7 @@ static SVec *GetCuboid(Client *client) {
 }
 
 static void clickhandler(void *param) {
-	onPlayerClick *a = param;
+	onPlayerClick *a = (onPlayerClick *)param;
 	if(Client_GetHeldBlock(a->client) != BLOCK_AIR || a->button == 0)
 		return;
 
@@ -89,8 +89,8 @@ COMMAND_FUNC(Set) {
 		for(cs_uint16 y = e.y; y < s.y; y++) {
 			for(cs_uint16 z = e.z; z < s.z; z++) {
 				SVec pos; Vec_Set(pos, x, y, z);
-				cs_uint32 offset = World_GetOffset(world, &pos);
-				if(offset > 0) {
+				cs_int32 offset = World_GetOffset(world, &pos);
+				if(offset != -1) {
 					Block_BulkUpdateAdd(&bbu, offset, block);
 					World_SetBlockO(world, offset, block);
 				}
@@ -117,12 +117,14 @@ COMMAND_FUNC(Replace) {
 		COMMAND_PRINTUSAGE;
 	}
 
-	BlockID from = (BlockID)String_ToInt(fromt);
-	BlockID to = (BlockID)String_ToInt(tot);
 	World *world = Client_GetWorld(client);
+	BlockID from = (BlockID)String_ToInt(fromt),
+	to = (BlockID)String_ToInt(tot),
+	*blocks = World_GetBlockArray(world, NULL);
 	SVec s = ptr[0], e = ptr[1];
 	CubeNormalize(&s, &e);
 	cs_uint32 count = 0;
+
 	BulkBlockUpdate bbu;
 	Block_BulkUpdateClean(&bbu);
 	bbu.world = world;
@@ -132,8 +134,8 @@ COMMAND_FUNC(Replace) {
 		for(cs_uint16 y = e.y; y < s.y; y++) {
 			for(cs_uint16 z = e.z; z < s.z; z++) {
 				SVec pos; Vec_Set(pos, x, y, z);
-				cs_uint32 offset = World_GetOffset(world, &pos);
-				if(offset > 0 && world->data[offset] == from) {
+				cs_int32 offset = World_GetOffset(world, &pos);
+				if(offset != -1 && blocks[offset] == from) {
 					Block_BulkUpdateAdd(&bbu, offset, to);
 					World_SetBlockO(world, offset, to);
 					count++;
