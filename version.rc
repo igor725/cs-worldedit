@@ -12,7 +12,6 @@ FILETYPE VFT_DLL
 			VALUE "FileDescription", "WorldEdit plugin for CServer\000"
 			VALUE "ProductName", "WorldEdit plugin\000"
 			VALUE "ProductVersion", "1.0\000"
-			VALUE "LegalCopyright", "\251 2019 Igor Gvaldov\000"
 			VALUE "OriginalFilename", "worldedit.dll\000"
 		}
 	}
