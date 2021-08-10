@@ -3,7 +3,6 @@
 #include <command.h>
 #include <event.h>
 #include <block.h>
-
 #include "main.h"
 
 static cs_uint16 WeAT;
