@@ -31,15 +31,15 @@ static void clickhandler(void *param) {
 	SVec *vecs = GetCuboid(a->client);
 	if(!vecs) return;
 
-	cs_bool isVecInvalid = Vec_IsInvalid(a->pos);
+	cs_bool isVecInvalid = Vec_IsInvalid(&a->tgpos);
 	if(isVecInvalid && a->button == 2) {
 		Vec_Set(vecs[0], -1, -1, -1);
 		Client_RemoveSelection(a->client, 0);
 	} else if(!isVecInvalid && a->button == 1) {
 		if(vecs[0].x == -1)
-			vecs[0] = *a->pos;
-		else if(!SVec_Compare(&vecs[0], a->pos) && !SVec_Compare(&vecs[1], a->pos)) {
-			vecs[1] = *a->pos;
+			vecs[0] = a->tgpos;
+		else if(!SVec_Compare(&vecs[0], &a->tgpos) && !SVec_Compare(&vecs[1], &a->tgpos)) {
+			vecs[1] = a->tgpos;
 			SVec s = vecs[0], e = vecs[1];
 			CubeNormalize(&s, &e);
 			Client_MakeSelection(a->client, 0, &s, &e, &DefaultSelectionColor);
@@ -168,7 +168,8 @@ cs_bool Plugin_Load(void) {
 	return true;
 }
 
-cs_bool Plugin_Unload(void) {
+cs_bool Plugin_Unload(cs_bool force) {
+	(void)force;
 	Assoc_DelType(WeAT, true);
 	COMMAND_REMOVE(Select);
 	COMMAND_REMOVE(Set);
