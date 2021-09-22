@@ -63,8 +63,7 @@ COMMAND_FUNC(Select) {
 
 COMMAND_FUNC(Set) {
 	COMMAND_SETUSAGE("/set <blockid>");
-	Client *client = ccdata->caller;
-	SVec *ptr = GetCuboid(client);
+	SVec *ptr = GetCuboid(ccdata->caller);
 	if(!ptr) {
 		COMMAND_PRINT("Select cuboid first.");
 	}
@@ -75,7 +74,7 @@ COMMAND_FUNC(Set) {
 	}
 
 	BlockID block = (BlockID)String_ToInt(blid);
-	World *world = Client_GetWorld(client);
+	World *world = Client_GetWorld(ccdata->caller);
 	SVec s = ptr[0], e = ptr[1];
 	CubeNormalize(&s, &e);
 	cs_uint32 count = (s.x - e.x) * (s.y - e.y) * (s.z - e.z);
@@ -104,8 +103,7 @@ COMMAND_FUNC(Set) {
 
 COMMAND_FUNC(Replace) {
 	COMMAND_SETUSAGE("/repalce <from> <to>");
-	Client *client = ccdata->caller;
-	SVec *ptr = GetCuboid(client);
+	SVec *ptr = GetCuboid(ccdata->caller);
 	if(!ptr) {
 		COMMAND_PRINT("Select cuboid first.");
 	}
@@ -116,7 +114,7 @@ COMMAND_FUNC(Replace) {
 		COMMAND_PRINTUSAGE;
 	}
 
-	World *world = Client_GetWorld(client);
+	World *world = Client_GetWorld(ccdata->caller);
 	BlockID from = (BlockID)String_ToInt(fromt),
 	to = (BlockID)String_ToInt(tot),
 	*blocks = World_GetBlockArray(world, NULL);
