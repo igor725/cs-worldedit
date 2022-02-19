@@ -34,21 +34,21 @@ static void clickhandler(void *param) {
 	SVec *vecs = GetCuboid(a->client);
 	if(!vecs) return;
 
-	cs_bool isVecInvalid = Vec_IsNegative(&a->tgpos);
+	cs_bool isVecInvalid = Vec_IsNegative(a->tgpos);
 	if(isVecInvalid && a->button == 2) {
 		Vec_Set(vecs[0], -1, -1, -1);
 		Client_RemoveSelection(a->client, 0);
-		Client_Chat(a->client, MESSAGE_TYPE_CHAT, "&dSelection cleared.");
+		Client_Chat(a->client, MESSAGE_TYPE_CHAT, "&dSelection cleared");
 	} else if(!isVecInvalid && a->button == 1) {
-		if(Vec_IsNegative(&vecs[0])) {
+		if(Vec_IsNegative(vecs[0])) {
 			vecs[0] = a->tgpos;
-			Client_Chat(a->client, MESSAGE_TYPE_CHAT, "&dFirst point selected.");
+			Client_Chat(a->client, MESSAGE_TYPE_CHAT, "&dFirst point selected");
 		} else if(!SVec_Compare(&vecs[0], &a->tgpos) && !SVec_Compare(&vecs[1], &a->tgpos)) {
 			vecs[1] = a->tgpos;
 			SVec s = vecs[0], e = vecs[1];
 			CubeNormalize(&s, &e);
 			Client_MakeSelection(a->client, 0, &s, &e, &DefaultSelectionColor);
-			Client_Chat(a->client, MESSAGE_TYPE_CHAT, "&dSecond point selected.");
+			Client_Chat(a->client, MESSAGE_TYPE_CHAT, "&dSecond point selected");
 		}
 	}
 }
@@ -69,7 +69,7 @@ COMMAND_FUNC(Set) {
 	COMMAND_SETUSAGE("/set <blockid>");
 	SVec *ptr = GetCuboid(ccdata->caller);
 	if(!ptr) {
-		COMMAND_PRINT("Select cuboid first.");
+		COMMAND_PRINT("Select cuboid first");
 	}
 
 	char blid[4];
@@ -105,14 +105,14 @@ COMMAND_FUNC(Set) {
 	World_Unlock(world);
 
 	const char *to_name = Block_GetName(world, block);
-	COMMAND_PRINTF("&d%d blocks filled with %s.", count, to_name);
+	COMMAND_PRINTF("&d%d blocks filled with %s", count, to_name);
 }
 
 COMMAND_FUNC(Replace) {
 	COMMAND_SETUSAGE("/repalce <from> <to>");
 	SVec *ptr = GetCuboid(ccdata->caller);
 	if(!ptr) {
-		COMMAND_PRINT("Select cuboid first.");
+		COMMAND_PRINT("Select cuboid first");
 	}
 
 	char fromt[4], tot[4];
@@ -153,7 +153,7 @@ COMMAND_FUNC(Replace) {
 	World_Unlock(world);
 
 	const char *to_name = Block_GetName(world, to);
-	COMMAND_PRINTF("&d%d blocks replaced with %s.", count, to_name);
+	COMMAND_PRINTF("&d%d blocks replaced with %s", count, to_name);
 }
 
 static void freeselvecs(void *param) {
