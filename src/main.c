@@ -1,8 +1,11 @@
 #include <core.h>
+#include <world.h>
 #include <client.h>
 #include <command.h>
 #include <event.h>
 #include <block.h>
+#include <assoc.h>
+#include <plugin.h>
 #include "main.h"
 
 static cs_uint16 WeAT;
@@ -51,13 +54,11 @@ COMMAND_FUNC(Select) {
 	SVec *ptr = GetCuboid(ccdata->caller);
 	if(ptr) {
 		Client_RemoveSelection(ccdata->caller, 0);
-		Assoc_Remove(ccdata->caller, WeAT, true);
+		Assoc_Remove(ccdata->caller, WeAT);
 		COMMAND_PRINT("Selection mode &cdisabled");
 	}
-	ptr = Memory_Alloc(2, sizeof(SVec));
-	Vec_Set(ptr[0], -1, -1, -1);
-	Vec_Set(ptr[1], -1, -1, -1);
-	Assoc_Set(ccdata->caller, WeAT, ptr);
+	ptr = Assoc_AllocFor(ccdata->caller, WeAT, 2, sizeof(SVec));
+	Vec_Set(ptr[0], -1, -1, -1); Vec_Set(ptr[1], -1, -1, -1);
 	COMMAND_PRINT("Selection mode &aenabled");
 }
 
@@ -97,7 +98,7 @@ COMMAND_FUNC(Set) {
 	}
 
 	Block_BulkUpdateSend(&bbu);
-	const char *to_name = Block_GetName(block);
+	const char *to_name = Block_GetName(world, block);
 	COMMAND_PRINTF("%d blocks filled with %s.", count, to_name);
 }
 
@@ -142,37 +143,41 @@ COMMAND_FUNC(Replace) {
 	}
 
 	Block_BulkUpdateSend(&bbu);
-	const char *to_name = Block_GetName(to);
+	const char *to_name = Block_GetName(world, to);
 	COMMAND_PRINTF("%d blocks replaced with %s.", count, to_name);
 }
 
 static void freeselvecs(void *param) {
-	Assoc_Remove((Client *)param, WeAT, true);
+	Assoc_Remove(param, WeAT);
 }
 
 Plugin_SetVersion(1)
 
+static EventRegBunch events[] = {
+	{'v', EVT_ONCLICK, (void *)clickhandler},
+	{'v', EVT_ONDISCONNECT, (void *)freeselvecs},
+	{0, 0, NULL}
+};
+
 cs_bool Plugin_Load(void) {
-	WeAT = Assoc_NewType();
+	WeAT = Assoc_NewType(ASSOC_BIND_CLIENT);
 	Command *cmd;
-	cmd = COMMAND_ADD(Select, CMDF_OP | CMDF_CLIENT);
+	cmd = COMMAND_ADD(Select, CMDF_OP | CMDF_CLIENT, "Activates area selection mode");
 	Command_SetAlias(cmd, "sel");
-	cmd = COMMAND_ADD(Set, CMDF_OP | CMDF_CLIENT);
+	cmd = COMMAND_ADD(Set, CMDF_OP | CMDF_CLIENT, "Fills selected area with specified block");
 	Command_SetAlias(cmd, "fill");
-	cmd = COMMAND_ADD(Replace, CMDF_OP | CMDF_CLIENT);
+	cmd = COMMAND_ADD(Replace, CMDF_OP | CMDF_CLIENT, "Replaces specified block in selected area");
 	Command_SetAlias(cmd, "repl");
-	Event_RegisterVoid(EVT_ONCLICK, clickhandler);
-	Event_RegisterVoid(EVT_ONDISCONNECT, freeselvecs);
+	Event_RegisterBunch(events);
 	return true;
 }
 
 cs_bool Plugin_Unload(cs_bool force) {
 	(void)force;
-	Assoc_DelType(WeAT, true);
+	Assoc_DelType(WeAT);
 	COMMAND_REMOVE(Select);
 	COMMAND_REMOVE(Set);
 	COMMAND_REMOVE(Replace);
-	EVENT_UNREGISTER(EVT_ONCLICK, clickhandler);
-	EVENT_UNREGISTER(EVT_ONDISCONNECT, freeselvecs);
+	Event_UnregisterBunch(events);
 	return true;
 }
