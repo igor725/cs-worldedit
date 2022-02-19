@@ -6,8 +6,8 @@
 #include <block.h>
 #include <assoc.h>
 #include <plugin.h>
-#include "main.h"
 
+static Color4 DefaultSelectionColor = {20, 200, 20, 100};
 static cs_uint16 WeAT;
 
 static void CubeNormalize(SVec *s, SVec *e) {
@@ -34,12 +34,13 @@ static void clickhandler(void *param) {
 	SVec *vecs = GetCuboid(a->client);
 	if(!vecs) return;
 
-	cs_bool isVecInvalid = Vec_IsNegative(a->tgpos);
-	if(isVecInvalid && a->button == 2) {
-		Vec_Set(vecs[0], -1, -1, -1);
-		Client_RemoveSelection(a->client, 0);
-		Client_Chat(a->client, MESSAGE_TYPE_CHAT, "&dSelection cleared");
-	} else if(!isVecInvalid && a->button == 1) {
+	if(Vec_IsNegative(a->tgpos)) {
+		if(!Vec_IsNegative(vecs[0]) && a->button == 2) {
+			Vec_Set(vecs[0], -1, -1, -1);
+			Client_RemoveSelection(a->client, 0);
+			Client_Chat(a->client, MESSAGE_TYPE_CHAT, "&dSelection cleared");
+		}
+	} else if(a->button == 1) {
 		if(Vec_IsNegative(vecs[0])) {
 			vecs[0] = a->tgpos;
 			Client_Chat(a->client, MESSAGE_TYPE_CHAT, "&dFirst point selected");
