@@ -28,24 +28,27 @@ static SVec *GetCuboid(Client *client) {
 
 static void clickhandler(void *param) {
 	onPlayerClick *a = (onPlayerClick *)param;
-	if(Client_GetHeldBlock(a->client) != BLOCK_AIR || a->button == 0)
+	if(Client_GetHeldBlock(a->client) != BLOCK_AIR || a->button == 0 || a->action == 1)
 		return;
 
 	SVec *vecs = GetCuboid(a->client);
 	if(!vecs) return;
 
-	cs_bool isVecInvalid = Vec_IsInvalid(&a->tgpos);
+	cs_bool isVecInvalid = Vec_IsNegative(&a->tgpos);
 	if(isVecInvalid && a->button == 2) {
 		Vec_Set(vecs[0], -1, -1, -1);
 		Client_RemoveSelection(a->client, 0);
+		Client_Chat(a->client, MESSAGE_TYPE_CHAT, "&dSelection cleared.");
 	} else if(!isVecInvalid && a->button == 1) {
-		if(vecs[0].x == -1)
+		if(Vec_IsNegative(&vecs[0])) {
 			vecs[0] = a->tgpos;
-		else if(!SVec_Compare(&vecs[0], &a->tgpos) && !SVec_Compare(&vecs[1], &a->tgpos)) {
+			Client_Chat(a->client, MESSAGE_TYPE_CHAT, "&dFirst point selected.");
+		} else if(!SVec_Compare(&vecs[0], &a->tgpos) && !SVec_Compare(&vecs[1], &a->tgpos)) {
 			vecs[1] = a->tgpos;
 			SVec s = vecs[0], e = vecs[1];
 			CubeNormalize(&s, &e);
 			Client_MakeSelection(a->client, 0, &s, &e, &DefaultSelectionColor);
+			Client_Chat(a->client, MESSAGE_TYPE_CHAT, "&dSecond point selected.");
 		}
 	}
 }
@@ -79,27 +82,30 @@ COMMAND_FUNC(Set) {
 	SVec s = ptr[0], e = ptr[1];
 	CubeNormalize(&s, &e);
 	cs_uint32 count = (s.x - e.x) * (s.y - e.y) * (s.z - e.z);
-	BulkBlockUpdate bbu;
+	BulkBlockUpdate bbu = {
+		.world = world,
+		.autosend = true
+	};
 	Block_BulkUpdateClean(&bbu);
-	bbu.world = world;
-	bbu.autosend = true;
 
+	World_Lock(world, 0);
 	for(cs_uint16 x = e.x; x < s.x; x++) {
 		for(cs_uint16 y = e.y; y < s.y; y++) {
 			for(cs_uint16 z = e.z; z < s.z; z++) {
 				SVec pos; Vec_Set(pos, x, y, z);
-				cs_int32 offset = World_GetOffset(world, &pos);
-				if(offset != -1) {
+				cs_uint32 offset = World_GetOffset(world, &pos);
+				if(offset != (cs_uint32)-1) {
 					Block_BulkUpdateAdd(&bbu, offset, block);
 					World_SetBlockO(world, offset, block);
 				}
 			}
 		}
 	}
-
 	Block_BulkUpdateSend(&bbu);
+	World_Unlock(world);
+
 	const char *to_name = Block_GetName(world, block);
-	COMMAND_PRINTF("%d blocks filled with %s.", count, to_name);
+	COMMAND_PRINTF("&d%d blocks filled with %s.", count, to_name);
 }
 
 COMMAND_FUNC(Replace) {
@@ -123,11 +129,13 @@ COMMAND_FUNC(Replace) {
 	CubeNormalize(&s, &e);
 	cs_uint32 count = 0;
 
-	BulkBlockUpdate bbu;
+	BulkBlockUpdate bbu = {
+		.world = world,
+		.autosend = true
+	};
 	Block_BulkUpdateClean(&bbu);
-	bbu.world = world;
-	bbu.autosend = true;
-
+	
+	World_Lock(world, 0);
 	for(cs_uint16 x = e.x; x < s.x; x++) {
 		for(cs_uint16 y = e.y; y < s.y; y++) {
 			for(cs_uint16 z = e.z; z < s.z; z++) {
@@ -141,10 +149,11 @@ COMMAND_FUNC(Replace) {
 			}
 		}
 	}
-
 	Block_BulkUpdateSend(&bbu);
+	World_Unlock(world);
+
 	const char *to_name = Block_GetName(world, to);
-	COMMAND_PRINTF("%d blocks replaced with %s.", count, to_name);
+	COMMAND_PRINTF("&d%d blocks replaced with %s.", count, to_name);
 }
 
 static void freeselvecs(void *param) {
