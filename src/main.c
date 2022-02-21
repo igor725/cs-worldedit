@@ -26,6 +26,12 @@ static SVec *GetCuboid(Client *client) {
 	return Assoc_GetPtr(client, WeAT);
 }
 
+static void SendCuboid(Client *client, SVec *vecs) {
+	SVec s = vecs[0], e = vecs[1];
+	CubeNormalize(&s, &e);
+	Client_MakeSelection(client, 0, &s, &e, &DefaultSelectionColor);
+}
+
 static void clickhandler(void *param) {
 	onPlayerClick *a = (onPlayerClick *)param;
 	if(Client_GetHeldBlock(a->client) != BLOCK_AIR || a->button == 0 || a->action == 1)
@@ -46,12 +52,119 @@ static void clickhandler(void *param) {
 			Client_Chat(a->client, MESSAGE_TYPE_CHAT, "&dFirst point selected");
 		} else if(!SVec_Compare(&vecs[0], &a->tgpos) && !SVec_Compare(&vecs[1], &a->tgpos)) {
 			vecs[1] = a->tgpos;
-			SVec s = vecs[0], e = vecs[1];
-			CubeNormalize(&s, &e);
-			Client_MakeSelection(a->client, 0, &s, &e, &DefaultSelectionColor);
+			SendCuboid(a->client, vecs);
 			Client_Chat(a->client, MESSAGE_TYPE_CHAT, "&dSecond point selected");
 		}
 	}
+}
+
+static cs_int32 checkside(cs_char *str) {
+	if(String_CaselessCompare(str, "forward") || String_CaselessCompare(str, "front"))
+		return 0;
+	else if(String_CaselessCompare(str, "left"))
+		return 1;
+	else if(String_CaselessCompare(str, "backward") || String_CaselessCompare(str, "back"))
+		return 2;
+	else if(String_CaselessCompare(str, "right"))
+		return 3;
+	return -1;
+}
+
+static void norinc(cs_int16 *v1, cs_int16 *v2, cs_int16 cnt, cs_int16 maxv) {
+	if(*v1 > *v2) *v1 = min(*v1 + cnt, maxv);
+	else *v2 = min(*v2 + cnt, maxv);
+}
+
+static void nordec(cs_int16 *v1, cs_int16 *v2, cs_int16 cnt, cs_int16 minv) {
+	if(*v1 < *v2) *v1 = max(*v1 - cnt, minv);
+	else *v2 = max(*v2 - cnt, minv);
+}
+
+COMMAND_FUNC(Expand) {
+	COMMAND_SETUSAGE("/expand <count> <side>");
+	cs_char arg1[12], arg2[12];
+
+	SVec *vecs = GetCuboid(ccdata->caller);
+	if(!vecs) {
+		COMMAND_PRINT("Select cuboid first");
+	}
+
+	if(COMMAND_GETARG(arg1, 12, 0) && COMMAND_GETARG(arg2, 12, 1)) {
+		cs_int32 cnt = String_ToInt(arg1);
+		cs_char *side = NULL;
+		if(cnt > 0) {
+			side = arg2;
+		} else {
+			side = arg1;
+			cnt = String_ToInt(arg2);
+		}
+
+		if(cnt < 1) {
+			COMMAND_PRINTUSAGE;
+		}
+
+		SVec dims;
+		World *world = Client_GetWorld(ccdata->caller);
+		World_GetDimensions(world, &dims);
+
+		if(String_CaselessCompare(side, "up")) {
+			norinc(&vecs[0].y, &vecs[1].y, (cs_int16)cnt, dims.y);
+			goto cuboidupdated;
+		} else if(String_CaselessCompare(side, "down")) {
+			nordec(&vecs[0].y, &vecs[1].y, (cs_int16)cnt, 0);
+			goto cuboidupdated;
+		}
+
+		cs_int32 diroffset = -1;
+		Ang rot;
+		if(!Client_GetPosition(ccdata->caller, NULL, &rot)) {
+			COMMAND_PRINT("Internal error");
+		}
+
+		cs_int32 dirplayer = ((cs_int32)(rot.yaw + 315.0f) % 360) / 90;
+
+		switch(checkside(side)) {
+			case 0:
+				diroffset = (dirplayer + 4) % 4;
+				break;
+			case 1:
+				diroffset = (dirplayer + 3) % 4;
+				break;
+			case 2:
+				diroffset = (dirplayer + 2) % 4;
+				break;
+			case 3:
+				diroffset = (dirplayer + 1) % 4;
+				break;
+			default:
+				COMMAND_PRINTUSAGE;
+		}
+
+		if(diroffset == -1) {
+			COMMAND_PRINTUSAGE;
+		}
+
+		switch(diroffset) {
+			case 0: // спереди
+				norinc(&vecs[0].x, &vecs[1].x, (cs_int16)cnt, dims.x);
+				break;
+			case 1: // справа
+				norinc(&vecs[0].z, &vecs[1].z, (cs_int16)cnt, dims.z);
+				break;
+			case 2: // сзади
+				nordec(&vecs[0].x, &vecs[1].x, (cs_int16)cnt, 0);
+				break;
+			case 3: // слева
+				nordec(&vecs[0].z, &vecs[1].z, (cs_int16)cnt, 0);
+				break;
+		}
+
+		cuboidupdated:
+		SendCuboid(ccdata->caller, vecs);
+		COMMAND_PRINTF("&dExpanded for %d blocks %s", cnt, side)
+	}
+
+	COMMAND_PRINTUSAGE;
 }
 
 COMMAND_FUNC(Select) {
@@ -161,7 +274,7 @@ static void freeselvecs(void *param) {
 	Assoc_Remove(param, WeAT);
 }
 
-Plugin_SetVersion(1)
+Plugin_SetVersion(1);
 
 static EventRegBunch events[] = {
 	{'v', EVT_ONCLICK, (void *)clickhandler},
@@ -178,6 +291,8 @@ cs_bool Plugin_Load(void) {
 	Command_SetAlias(cmd, "fill");
 	cmd = COMMAND_ADD(Replace, CMDF_OP | CMDF_CLIENT, "Replaces specified block in selected area");
 	Command_SetAlias(cmd, "repl");
+	cmd = COMMAND_ADD(Expand, CMDF_OP | CMDF_CLIENT, "Expands selected aread");
+	Command_SetAlias(cmd, "expd");
 	Event_RegisterBunch(events);
 	return true;
 }
@@ -188,6 +303,7 @@ cs_bool Plugin_Unload(cs_bool force) {
 	COMMAND_REMOVE(Select);
 	COMMAND_REMOVE(Set);
 	COMMAND_REMOVE(Replace);
+	COMMAND_REMOVE(Expand);
 	Event_UnregisterBunch(events);
 	return true;
 }
