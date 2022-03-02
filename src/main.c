@@ -247,9 +247,9 @@ COMMAND_FUNC(Replace) {
 		.world = world,
 		.autosend = true
 	};
-	Block_BulkUpdateClean(&bbu);
 	
 	World_Lock(world, 0);
+	Block_BulkUpdateClean(&bbu);
 	for(cs_uint16 x = e.x; x < s.x; x++) {
 		for(cs_uint16 y = e.y; y < s.y; y++) {
 			for(cs_uint16 z = e.z; z < s.z; z++) {
@@ -276,10 +276,11 @@ static void freeselvecs(void *param) {
 
 Plugin_SetVersion(1);
 
-static EventRegBunch events[] = {
-	{'v', EVT_ONCLICK, (void *)clickhandler},
-	{'v', EVT_ONDISCONNECT, (void *)freeselvecs},
-	{0, 0, NULL}
+Event_DeclareBunch (events) {
+	EVENT_BUNCH_ADD('v', EVT_ONCLICK, clickhandler)
+	EVENT_BUNCH_ADD('v', EVT_ONDISCONNECT, freeselvecs)
+
+	EVENT_BUNCH_END
 };
 
 cs_bool Plugin_Load(void) {
@@ -293,8 +294,7 @@ cs_bool Plugin_Load(void) {
 	Command_SetAlias(cmd, "repl");
 	cmd = COMMAND_ADD(Expand, CMDF_OP | CMDF_CLIENT, "Expands selected aread");
 	Command_SetAlias(cmd, "expd");
-	Event_RegisterBunch(events);
-	return true;
+	return Event_RegisterBunch(events);
 }
 
 cs_bool Plugin_Unload(cs_bool force) {
