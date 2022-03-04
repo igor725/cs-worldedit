@@ -7,29 +7,17 @@
 #include <assoc.h>
 #include <plugin.h>
 
+typedef struct _SelectionInfo {
+	CPECuboid *cub;
+	SVec pos[2];
+} SelectionInfo;
+
+static SVec InvalidVector = {-1, -1, -1};
 static Color4 DefaultSelectionColor = {20, 200, 20, 100};
 static cs_uint16 WeAT;
 
-static void CubeNormalize(SVec *s, SVec *e) {
-	cs_int16 tmp, *a = (cs_int16 *)s, *b = (cs_int16 *)e;
-	for(int i = 0; i < 3; i++) {
-		if(a[i] < b[i]) {
-			tmp = a[i];
-			a[i] = b[i];
-			b[i] = tmp;
-		}
-		a[i]++;
-	}
-}
-
-static SVec *GetCuboid(Client *client) {
+static SelectionInfo *GetSelection(Client *client) {
 	return Assoc_GetPtr(client, WeAT);
-}
-
-static void SendCuboid(Client *client, SVec *vecs) {
-	SVec s = vecs[0], e = vecs[1];
-	CubeNormalize(&s, &e);
-	Client_MakeSelection(client, 0, &s, &e, &DefaultSelectionColor);
 }
 
 static void clickhandler(void *param) {
@@ -37,22 +25,24 @@ static void clickhandler(void *param) {
 	if(Client_GetHeldBlock(a->client) != BLOCK_AIR || a->button == 0 || a->action == 1)
 		return;
 
-	SVec *vecs = GetCuboid(a->client);
-	if(!vecs) return;
+	SelectionInfo *sel = GetSelection(a->client);
+	if(!sel) return;
 
 	if(Vec_IsNegative(a->tgpos)) {
-		if(!Vec_IsNegative(vecs[0]) && a->button == 2) {
-			Vec_Set(vecs[0], -1, -1, -1);
-			Client_RemoveSelection(a->client, 0);
+		if(!Vec_IsNegative(sel->pos[0]) && a->button == 2) {
+			sel->pos[0] = InvalidVector;
+			Cuboid_SetPositions(sel->cub, InvalidVector, InvalidVector);
+			Client_UpdateSelection(a->client, sel->cub);
 			Client_Chat(a->client, MESSAGE_TYPE_CHAT, "&dSelection cleared");
 		}
 	} else if(a->button == 1) {
-		if(Vec_IsNegative(vecs[0])) {
-			vecs[0] = a->tgpos;
+		if(Vec_IsNegative(sel->pos[0])) {
+			sel->pos[0] = a->tgpos;
 			Client_Chat(a->client, MESSAGE_TYPE_CHAT, "&dFirst point selected");
-		} else if(!SVec_Compare(&vecs[0], &a->tgpos) && !SVec_Compare(&vecs[1], &a->tgpos)) {
-			vecs[1] = a->tgpos;
-			SendCuboid(a->client, vecs);
+		} else if(!SVec_Compare(&sel->pos[0], &a->tgpos) && !SVec_Compare(&sel->pos[1], &a->tgpos)) {
+			sel->pos[1] = a->tgpos;
+			Cuboid_SetPositions(sel->cub, sel->pos[0], sel->pos[1]);
+			Client_UpdateSelection(a->client, sel->cub);
 			Client_Chat(a->client, MESSAGE_TYPE_CHAT, "&dSecond point selected");
 		}
 	}
@@ -84,8 +74,8 @@ COMMAND_FUNC(Expand) {
 	COMMAND_SETUSAGE("/expand <count> <side>");
 	cs_char arg1[12], arg2[12];
 
-	SVec *vecs = GetCuboid(ccdata->caller);
-	if(!vecs) {
+	SelectionInfo *sel = GetSelection(ccdata->caller);
+	if(!sel) {
 		COMMAND_PRINT("Select cuboid first");
 	}
 
@@ -108,10 +98,10 @@ COMMAND_FUNC(Expand) {
 		World_GetDimensions(world, &dims);
 
 		if(String_CaselessCompare(side, "up")) {
-			norinc(&vecs[0].y, &vecs[1].y, (cs_int16)cnt, dims.y);
+			norinc(&sel->pos[0].y, &sel->pos[1].y, (cs_int16)cnt, dims.y);
 			goto cuboidupdated;
 		} else if(String_CaselessCompare(side, "down")) {
-			nordec(&vecs[0].y, &vecs[1].y, (cs_int16)cnt, 0);
+			nordec(&sel->pos[0].y, &sel->pos[1].y, (cs_int16)cnt, 0);
 			goto cuboidupdated;
 		}
 
@@ -146,21 +136,22 @@ COMMAND_FUNC(Expand) {
 
 		switch(diroffset) {
 			case 0: // спереди
-				norinc(&vecs[0].x, &vecs[1].x, (cs_int16)cnt, dims.x);
+				norinc(&sel->pos[0].x, &sel->pos[1].x, (cs_int16)cnt, dims.x);
 				break;
 			case 1: // справа
-				norinc(&vecs[0].z, &vecs[1].z, (cs_int16)cnt, dims.z);
+				norinc(&sel->pos[0].z, &sel->pos[1].z, (cs_int16)cnt, dims.z);
 				break;
 			case 2: // сзади
-				nordec(&vecs[0].x, &vecs[1].x, (cs_int16)cnt, 0);
+				nordec(&sel->pos[0].x, &sel->pos[1].x, (cs_int16)cnt, 0);
 				break;
 			case 3: // слева
-				nordec(&vecs[0].z, &vecs[1].z, (cs_int16)cnt, 0);
+				nordec(&sel->pos[0].z, &sel->pos[1].z, (cs_int16)cnt, 0);
 				break;
 		}
 
 		cuboidupdated:
-		SendCuboid(ccdata->caller, vecs);
+		Cuboid_SetPositions(sel->cub, sel->pos[0], sel->pos[1]);
+		Client_UpdateSelection(ccdata->caller, sel->cub);
 		COMMAND_PRINTF("&dExpanded for %d blocks %s", cnt, side)
 	}
 
@@ -168,21 +159,23 @@ COMMAND_FUNC(Expand) {
 }
 
 COMMAND_FUNC(Select) {
-	SVec *ptr = GetCuboid(ccdata->caller);
-	if(ptr) {
-		Client_RemoveSelection(ccdata->caller, 0);
+	SelectionInfo *sel = GetSelection(ccdata->caller);
+	if(sel) {
+		Client_RemoveSelection(ccdata->caller, sel->cub);
 		Assoc_Remove(ccdata->caller, WeAT);
 		COMMAND_PRINT("Selection mode &cdisabled");
 	}
-	ptr = Assoc_AllocFor(ccdata->caller, WeAT, 2, sizeof(SVec));
-	Vec_Set(ptr[0], -1, -1, -1); Vec_Set(ptr[1], -1, -1, -1);
+	sel = Assoc_AllocFor(ccdata->caller, WeAT, 1, sizeof(SelectionInfo));
+	sel->cub = Client_NewSelection(ccdata->caller);
+	Vec_Set(sel->pos[0], -1, -1, -1); Vec_Set(sel->pos[1], -1, -1, -1);
+	Cuboid_SetColor(sel->cub, DefaultSelectionColor);
 	COMMAND_PRINT("Selection mode &aenabled");
 }
 
 COMMAND_FUNC(Set) {
 	COMMAND_SETUSAGE("/set <blockid>");
-	SVec *ptr = GetCuboid(ccdata->caller);
-	if(!ptr) {
+	SelectionInfo *sel = GetSelection(ccdata->caller);
+	if(!sel) {
 		COMMAND_PRINT("Select cuboid first");
 	}
 
@@ -193,9 +186,9 @@ COMMAND_FUNC(Set) {
 
 	BlockID block = (BlockID)String_ToInt(blid);
 	World *world = Client_GetWorld(ccdata->caller);
-	SVec s = ptr[0], e = ptr[1];
-	CubeNormalize(&s, &e);
-	cs_uint32 count = (s.x - e.x) * (s.y - e.y) * (s.z - e.z);
+	SVec s = {0}, e = {0};
+	Cuboid_GetPositions(sel->cub, &s, &e);
+	cs_uint32 count = Cuboid_GetSize(sel->cub);
 	BulkBlockUpdate bbu = {
 		.world = world,
 		.autosend = true
@@ -224,8 +217,8 @@ COMMAND_FUNC(Set) {
 
 COMMAND_FUNC(Replace) {
 	COMMAND_SETUSAGE("/repalce <from> <to>");
-	SVec *ptr = GetCuboid(ccdata->caller);
-	if(!ptr) {
+	SelectionInfo *sel = GetSelection(ccdata->caller);
+	if(!sel) {
 		COMMAND_PRINT("Select cuboid first");
 	}
 
@@ -239,8 +232,8 @@ COMMAND_FUNC(Replace) {
 	BlockID from = (BlockID)String_ToInt(fromt),
 	to = (BlockID)String_ToInt(tot),
 	*blocks = World_GetBlockArray(world, NULL);
-	SVec s = ptr[0], e = ptr[1];
-	CubeNormalize(&s, &e);
+	SVec s = {0}, e = {0};
+	Cuboid_GetPositions(sel->cub, &s, &e);
 	cs_uint32 count = 0;
 
 	BulkBlockUpdate bbu = {
