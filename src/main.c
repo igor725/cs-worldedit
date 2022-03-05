@@ -196,9 +196,9 @@ COMMAND_FUNC(Set) {
 	Block_BulkUpdateClean(&bbu);
 
 	World_Lock(world, 0);
-	for(cs_uint16 x = e.x; x < s.x; x++) {
-		for(cs_uint16 y = e.y; y < s.y; y++) {
-			for(cs_uint16 z = e.z; z < s.z; z++) {
+	for(cs_uint16 x = s.x; x < e.x; x++) {
+		for(cs_uint16 y = s.y; y < e.y; y++) {
+			for(cs_uint16 z = s.z; z < e.z; z++) {
 				SVec pos; Vec_Set(pos, x, y, z);
 				cs_uint32 offset = World_GetOffset(world, &pos);
 				if(offset != (cs_uint32)-1) {
@@ -243,9 +243,9 @@ COMMAND_FUNC(Replace) {
 	
 	World_Lock(world, 0);
 	Block_BulkUpdateClean(&bbu);
-	for(cs_uint16 x = e.x; x < s.x; x++) {
-		for(cs_uint16 y = e.y; y < s.y; y++) {
-			for(cs_uint16 z = e.z; z < s.z; z++) {
+	for(cs_uint16 x = s.x; x < e.x; x++) {
+		for(cs_uint16 y = s.y; y < e.y; y++) {
+			for(cs_uint16 z = s.z; z < e.z; z++) {
 				SVec pos; Vec_Set(pos, x, y, z);
 				cs_int32 offset = World_GetOffset(world, &pos);
 				if(offset != -1 && blocks[offset] == from) {
