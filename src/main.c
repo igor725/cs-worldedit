@@ -152,7 +152,7 @@ COMMAND_FUNC(Expand) {
 		cuboidupdated:
 		Cuboid_SetPositions(sel->cub, sel->pos[0], sel->pos[1]);
 		Client_UpdateSelection(ccdata->caller, sel->cub);
-		COMMAND_PRINTF("&dExpanded for %d blocks %s", cnt, side)
+		COMMAND_PRINTF("&dExpanded for %d blocks %s", cnt, side);
 	}
 
 	COMMAND_PRINTUSAGE;
