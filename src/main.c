@@ -182,6 +182,9 @@ COMMAND_FUNC(Set) {
 
 	BlockID block = (BlockID)String_ToInt(blid);
 	World *world = Client_GetWorld(ccdata->caller);
+	if(!Block_IsValid(world, block))
+		COMMAND_PRINT("Unknown block id");
+
 	SVec s = {0}, e = {0};
 	Cuboid_GetPositions(sel->cub, &s, &e);
 	cs_uint32 count = Cuboid_GetSize(sel->cub);
@@ -226,8 +229,10 @@ COMMAND_FUNC(Replace) {
 
 	World *world = Client_GetWorld(ccdata->caller);
 	BlockID from = (BlockID)String_ToInt(fromt),
-	to = (BlockID)String_ToInt(tot),
-	*blocks = World_GetBlockArray(world, NULL);
+	to = (BlockID)String_ToInt(tot);
+	if(!Block_IsValid(world, from) || !Block_IsValid(world, to))
+		COMMAND_PRINT("Unknown block id");
+	BlockID *blocks = World_GetBlockArray(world, NULL);
 	SVec s = {0}, e = {0};
 	Cuboid_GetPositions(sel->cub, &s, &e);
 	cs_uint32 count = 0;
@@ -255,8 +260,8 @@ COMMAND_FUNC(Replace) {
 	Block_BulkUpdateSend(&bbu);
 	World_Unlock(world);
 
-	const char *to_name = Block_GetName(world, to);
-	COMMAND_PRINTF("&d%d blocks replaced with %s", count, to_name);
+	cs_str to_name = Block_GetName(world, to), from_name = Block_GetName(world, from);
+	COMMAND_PRINTF("&d%d blocks of %s replaced with %s", count, from_name, to_name);
 }
 
 static void freeselvecs(void *param) {
