@@ -82,15 +82,11 @@ COMMAND_FUNC(Expand) {
 	if(COMMAND_GETARG(arg1, 12, 0) && COMMAND_GETARG(arg2, 12, 1)) {
 		cs_int32 cnt = String_ToInt(arg1);
 		cs_char *side = NULL;
-		if(cnt > 0) {
+		if(cnt != 0) {
 			side = arg2;
 		} else {
 			side = arg1;
 			cnt = String_ToInt(arg2);
-		}
-
-		if(cnt < 1) {
-			COMMAND_PRINTUSAGE;
 		}
 
 		SVec dims;
