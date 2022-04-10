@@ -14,7 +14,7 @@ typedef struct _SelectionInfo {
 
 static SVec InvalidVector = {-1, -1, -1};
 static Color4 DefaultSelectionColor = {20, 200, 20, 100};
-static cs_uint16 WeAT;
+static AssocType WeAT = ASSOC_INVALID_TYPE;
 
 static SelectionInfo *GetSelection(Client *client) {
 	return Assoc_GetPtr(client, WeAT);
@@ -75,9 +75,7 @@ COMMAND_FUNC(Expand) {
 	cs_char arg1[12], arg2[12];
 
 	SelectionInfo *sel = GetSelection(ccdata->caller);
-	if(!sel) {
-		COMMAND_PRINT("Select cuboid first");
-	}
+	if(!sel) COMMAND_PRINT("Select cuboid first");
 
 	if(COMMAND_GETARG(arg1, 12, 0) && COMMAND_GETARG(arg2, 12, 1)) {
 		cs_int32 cnt = String_ToInt(arg1);
@@ -103,9 +101,8 @@ COMMAND_FUNC(Expand) {
 
 		cs_int32 diroffset = -1;
 		Ang rot;
-		if(!Client_GetPosition(ccdata->caller, NULL, &rot)) {
+		if(!Client_GetPosition(ccdata->caller, NULL, &rot))
 			COMMAND_PRINT("Internal error");
-		}
 
 		cs_int32 dirplayer = ((cs_int32)(rot.yaw + 315.0f) % 360) / 90;
 
@@ -126,9 +123,8 @@ COMMAND_FUNC(Expand) {
 				COMMAND_PRINTUSAGE;
 		}
 
-		if(diroffset == -1) {
+		if(diroffset == -1)
 			COMMAND_PRINTUSAGE;
-		}
 
 		switch(diroffset) {
 			case 0: // спереди
@@ -171,14 +167,11 @@ COMMAND_FUNC(Select) {
 COMMAND_FUNC(Set) {
 	COMMAND_SETUSAGE("/set <blockid>");
 	SelectionInfo *sel = GetSelection(ccdata->caller);
-	if(!sel) {
-		COMMAND_PRINT("Select cuboid first");
-	}
+	if(!sel) COMMAND_PRINT("Select cuboid first");
 
 	char blid[4];
-	if(!COMMAND_GETARG(blid, 4, 0)){
+	if(!COMMAND_GETARG(blid, 4, 0))
 		COMMAND_PRINTUSAGE;
-	}
 
 	BlockID block = (BlockID)String_ToInt(blid);
 	World *world = Client_GetWorld(ccdata->caller);
@@ -217,21 +210,19 @@ COMMAND_FUNC(Set) {
 COMMAND_FUNC(Replace) {
 	COMMAND_SETUSAGE("/repalce <from> <to>");
 	SelectionInfo *sel = GetSelection(ccdata->caller);
-	if(!sel) {
-		COMMAND_PRINT("Select cuboid first");
-	}
+	if(!sel) COMMAND_PRINT("Select cuboid first");
 
 	char fromt[4], tot[4];
 	if(!COMMAND_GETARG(fromt, 4, 0)||
-	!COMMAND_GETARG(tot, 4, 1)) {
+	!COMMAND_GETARG(tot, 4, 1))
 		COMMAND_PRINTUSAGE;
-	}
 
 	World *world = Client_GetWorld(ccdata->caller);
 	BlockID from = (BlockID)String_ToInt(fromt),
 	to = (BlockID)String_ToInt(tot);
 	if(!Block_IsValid(world, from) || !Block_IsValid(world, to))
 		COMMAND_PRINT("Unknown block id");
+
 	BlockID *blocks = World_GetBlockArray(world, NULL);
 	SVec s = {0}, e = {0};
 	Cuboid_GetPositions(sel->cub, &s, &e);
