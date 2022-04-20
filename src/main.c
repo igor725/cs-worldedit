@@ -1,5 +1,6 @@
 #include <core.h>
 #include <world.h>
+#include <cpe.h>
 #include <client.h>
 #include <command.h>
 #include <event.h>
