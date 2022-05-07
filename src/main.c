@@ -102,9 +102,7 @@ COMMAND_FUNC(Expand) {
 
 		cs_int32 diroffset = -1;
 		Ang rot;
-		if(!Client_GetPosition(ccdata->caller, NULL, &rot))
-			COMMAND_PRINT("Internal error");
-
+		Client_GetPosition(ccdata->caller, NULL, &rot);
 		cs_int32 dirplayer = ((cs_int32)(rot.yaw + 315.0f) % 360) / 90;
 
 		switch(checkside(side)) {
