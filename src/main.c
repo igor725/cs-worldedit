@@ -51,13 +51,13 @@ static void clickhandler(void *param) {
 
 static cs_int32 checkside(cs_char *str) {
 	if(String_CaselessCompare(str, "forward") || String_CaselessCompare(str, "front"))
-		return 0;
+		return 4;
 	else if(String_CaselessCompare(str, "left"))
-		return 1;
+		return 3;
 	else if(String_CaselessCompare(str, "backward") || String_CaselessCompare(str, "back"))
 		return 2;
 	else if(String_CaselessCompare(str, "right"))
-		return 3;
+		return 1;
 	return -1;
 }
 
@@ -100,30 +100,11 @@ COMMAND_FUNC(Expand) {
 			goto cuboidupdated;
 		}
 
-		cs_int32 diroffset = -1;
 		Ang rot;
 		Client_GetPosition(ccdata->caller, NULL, &rot);
 		cs_int32 dirplayer = ((cs_int32)(rot.yaw + 315.0f) % 360) / 90;
-
-		switch(checkside(side)) {
-			case 0:
-				diroffset = (dirplayer + 4) % 4;
-				break;
-			case 1:
-				diroffset = (dirplayer + 3) % 4;
-				break;
-			case 2:
-				diroffset = (dirplayer + 2) % 4;
-				break;
-			case 3:
-				diroffset = (dirplayer + 1) % 4;
-				break;
-			default:
-				COMMAND_PRINTUSAGE;
-		}
-
-		if(diroffset == -1)
-			COMMAND_PRINTUSAGE;
+		cs_int32 dirside = checkside(side); if(dirside < 0) COMMAND_PRINTUSAGE;
+		cs_int32 diroffset = (dirplayer + dirside) % 4;
 
 		switch(diroffset) {
 			case 0: // спереди
