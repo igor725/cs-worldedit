@@ -257,7 +257,7 @@ cs_bool Plugin_Load(void) {
 	Command_SetAlias(cmd, "fill");
 	cmd = COMMAND_ADD(Replace, CMDF_OP | CMDF_CLIENT, "Replaces specified block in selected area");
 	Command_SetAlias(cmd, "repl");
-	cmd = COMMAND_ADD(Expand, CMDF_OP | CMDF_CLIENT, "Expands selected aread");
+	cmd = COMMAND_ADD(Expand, CMDF_OP | CMDF_CLIENT, "Expands selected area");
 	Command_SetAlias(cmd, "expd");
 	return Event_RegisterBunch(events);
 }
