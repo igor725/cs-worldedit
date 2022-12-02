@@ -100,8 +100,7 @@ COMMAND_FUNC(Expand) {
 			goto cuboidupdated;
 		}
 
-		Ang rot;
-		Client_GetPosition(ccdata->caller, NULL, &rot);
+		Ang rot; Client_GetPosition(ccdata->caller, NULL, &rot);
 		cs_int32 dirplayer = ((cs_int32)(rot.yaw + 315.0f) % 360) / 90;
 		cs_int32 dirside = checkside(side); if(dirside < 0) COMMAND_PRINTUSAGE;
 		cs_int32 diroffset = (dirplayer + dirside) % 4;
@@ -165,9 +164,9 @@ COMMAND_FUNC(Set) {
 		.world = world,
 		.autosend = true
 	};
-	Block_BulkUpdateClean(&bbu);
 
 	World_Lock(world, 0);
+	Block_BulkUpdateClean(&bbu);
 	for(cs_uint16 x = s.x; x < e.x; x++) {
 		for(cs_uint16 y = s.y; y < e.y; y++) {
 			for(cs_uint16 z = s.z; z < e.z; z++) {
@@ -204,15 +203,14 @@ COMMAND_FUNC(Replace) {
 		COMMAND_PRINT("Unknown block id");
 
 	BlockID *blocks = World_GetBlockArray(world, NULL);
-	SVec s = {0}, e = {0};
-	Cuboid_GetPositions(sel->cub, &s, &e);
+	SVec s, e; Cuboid_GetPositions(sel->cub, &s, &e);
 	cs_uint32 count = 0;
 
 	BulkBlockUpdate bbu = {
 		.world = world,
 		.autosend = true
 	};
-	
+
 	World_Lock(world, 0);
 	Block_BulkUpdateClean(&bbu);
 	for(cs_uint16 x = s.x; x < e.x; x++) {
@@ -242,8 +240,8 @@ static void freeselvecs(void *param) {
 Plugin_SetVersion(1);
 
 Event_DeclareBunch (events) {
-	EVENT_BUNCH_ADD('v', EVT_ONCLICK, clickhandler)
-	EVENT_BUNCH_ADD('v', EVT_ONDISCONNECT, freeselvecs)
+	EVENT_BUNCH_ADD('v', EVT_ONCLICK, clickhandler),
+	EVENT_BUNCH_ADD('v', EVT_ONDISCONNECT, freeselvecs),
 
 	EVENT_BUNCH_END
 };
