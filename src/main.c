@@ -238,6 +238,9 @@ static void freeselvecs(void *param) {
 }
 
 Plugin_SetVersion(1);
+#if PLUGIN_API_NUM > 1
+Plugin_SetURL("https://github.com/igor725/cs-worldedit");
+#endif
 
 Event_DeclareBunch (events) {
 	EVENT_BUNCH_ADD('v', EVT_ONCLICK, clickhandler),
